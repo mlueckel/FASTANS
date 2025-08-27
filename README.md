@@ -1,2 +1,2 @@
 # FASTANS - Fast Targeted Functional Network Stimulation
-![FASTANS_logo](https://github.com/user-attachments/assets/75408372-b860-4cf3-8167-fa115af5751b)
+<img src="https://github.com/user-attachments/assets/c11ab74d-8d21-4092-a262-328c50185f49" width="600" />
