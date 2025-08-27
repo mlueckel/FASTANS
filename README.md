@@ -29,9 +29,13 @@ Recommended way of installing SimNIBS 4.5 (Linux):
    conda activate simnibs_env
    pip install https://github.com/simnibs/simnibs/releases/download/v4.5.0/simnibs-4.5.0-cp311-cp311-linux_x86_64.whl
    ```
-4. (Optional) To setup the menu icons, file associations, the MATLAB library and add SimNIBS to the system path, run the postinstall_simnibs script:
+4. Wihtin the SimNIBS conda environment, install a Python IDE, e.g., Spyder:
+   ```bash
+   pip install spyder
+   ```
+5. (Optional) To setup the menu icons, file associations, the MATLAB library and add SimNIBS to the system path, run the postinstall_simnibs script:
    ```bash
    mkdir $HOME/SimNIBS
    postinstall_simnibs --setup-links -d $HOME/SimNIBS
    ```
-Note: These instructions are based on the installation instructions given on the SimNIBS website: https://simnibs.github.io/simnibs/build/html/installation/conda.html
+Note: These instructions are largely based on the installation instructions given on the SimNIBS website: https://simnibs.github.io/simnibs/build/html/installation/conda.html
