@@ -12,7 +12,7 @@
 
 # Installation
 1. Download/clone this code repository.
-2. In *FASTANS_TMS_optimization_pipeline.py* and *FASTANS.py* (within the *code* folder), edit the *FASTANS_installation_folderpath* variable according to your download location of the FASTANS folder.
+2. In *FASTANS_TMS_optimization_pipeline.py* and *FASTANS.py* (within the *code* folder), edit the *FASTANS_installation_folderpath* variable according to your download location of the FASTANS code repository.
 3. Additionally: In *FASTANS_TMS_optimization_pipeline.py*, edit the *simnibs_installation_path* variable according to the location of your SimNIBS 4.5 installation - this is needed to find the correct TMS coil (.ccd) files provided by SimNIBS (usually stored in */SimNIBSInstallationFolder/resources/coil_models/Drakaki_BrainStim_2022/*).
 
 **Software dependencies:**
