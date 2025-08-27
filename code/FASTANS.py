@@ -256,7 +256,7 @@ def cifti_dscalar_to_dlabel(dscalar_filepath, dlabel_template_filepath, output_t
     if output_type == 'binary':
         os.system('wb_command -cifti-label-import {} {} {}'.format(
             dscalar_filepath,
-            os.path.join(resources_folderpath, 'templates', 'ROILabelsTempalte.txt'),
+            os.path.join(resources_folderpath, 'templates', 'ROILabelsTemplate.txt'),
             dscalar_path + '/' + dscalar_filename + '.dlabel.nii'))
     elif not output_type:
         if os.path.split(dlabel_template_filepath)[1][-10:] == 'dlabel.nii':
@@ -490,7 +490,7 @@ def cifti_extract_largest_cluster(cifti_filepath, surface_midthickness_left_file
         surface_midthickness_left_filepath,
         surface_midthickness_right_filepath))
 
-    cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'), os.path.join(resources_folderpath, 'templates', 'ROILabelsTempalte.txt'))
+    cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'), os.path.join(resources_folderpath, 'templates', 'ROILabelsTemplate.txt'))
 
     os.system('rm ' + os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'))
 
@@ -702,8 +702,6 @@ def create_simnibs_roi(cifti_filepath, roi_id, roi_name, output_folderpath, m2m_
     import glob
     import simnibs
 
-    os.makedirs(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), exist_ok=True)
-
     # Combine midthickness surfaces.
     combine_gifti_surfaces(surface_midthickness_left_filepath,
                            surface_midthickness_right_filepath,
@@ -741,6 +739,8 @@ def create_simnibs_roi(cifti_filepath, roi_id, roi_name, output_folderpath, m2m_
                          'mask_value': [roi_id]}
 
     roi = simnibs.utils.region_of_interest.RegionOfInterest(roi_settings_dict)
+    
+    # os.makedirs(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), exist_ok=True)
     # roi.write_visualization(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), 'simnibs_roi_' + roi_name)
 
     # Cleanup temporary intermediates.
