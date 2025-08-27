@@ -34,4 +34,4 @@ Recommended way of installing SimNIBS 4.5 (Linux):
    mkdir $HOME/SimNIBS
    postinstall_simnibs --setup-links -d $HOME/SimNIBS
    ```
-Note: These instruction are based on the installation intructions given on the SimNIBS website: https://simnibs.github.io/simnibs/build/html/installation/conda.html
+Note: These instructions are based on the installation instructions given on the SimNIBS website: https://simnibs.github.io/simnibs/build/html/installation/conda.html
