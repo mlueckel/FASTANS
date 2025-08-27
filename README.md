@@ -3,7 +3,7 @@
 
 **FASTANS** is an accelerated, Python-based implementation of the *Targeted Functional Network Stimulation (TANS)* approach described in Lynch et al. [1,2]. The github repository with the original Matlab code can be found here: https://github.com/cjl2007/Targeted-Functional-Network-Stimulation
 
-<img src="https://github.com/user-attachments/assets/72fab372-8161-4ff5-903e-76eaaab6ba0c" width="25" /> While the original implementation ususally takes several hours to run, FASTANS allows optimization of TMS coil placements **within minutes**.
+<img src="https://github.com/user-attachments/assets/72fab372-8161-4ff5-903e-76eaaab6ba0c" width="25" /> While the original implementation usually takes several hours to run, FASTANS allows optimization of TMS coil placements **within minutes**.
 
 [1] *Lynch, C. J., Elbau, I. G., Ng, T. H., Wolk, D., Zhu, S., Ayaz, A., ... & Liston, C. (2022). Automated optimization of TMS coil placement for personalized functional network engagement. Neuron, 110(20), 3263-3277.*
 
