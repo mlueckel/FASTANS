@@ -740,8 +740,8 @@ def create_simnibs_roi(cifti_filepath, roi_id, roi_name, output_folderpath, m2m_
 
     roi = simnibs.utils.region_of_interest.RegionOfInterest(roi_settings_dict)
     
-    # os.makedirs(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), exist_ok=True)
-    # roi.write_visualization(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), 'simnibs_roi_' + roi_name)
+    os.makedirs(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), exist_ok=True)
+    roi.write_visualization(os.path.join(output_folderpath, 'SimNIBS_ROIs', roi_name), 'simnibs_roi_' + roi_name)
 
     # Cleanup temporary intermediates.
     os.system('rm ' + gii_left)
