@@ -39,3 +39,50 @@ Recommended way of installing SimNIBS 4.5 (Linux):
    postinstall_simnibs --setup-links -d $HOME/SimNIBS
    ```
 Note: These instructions are largely based on the installation instructions given on the SimNIBS website: https://simnibs.github.io/simnibs/build/html/installation/conda.html
+
+
+# Example use
+```
+#=============================================================================
+# FASTANS configuration
+#=============================================================================
+
+# Name of output folder
+output_foldername = 'Frontoparietal'
+
+# Full path to output folder
+output_folderpath = os.path.join('/.../FASTANS/resources/example_data/FASTANS', output_foldername)
+
+# Path to subject-specific SimNIBS m2m folder
+m2m_folderpath = '/.../FASTANS/resources/example_data/m2m_FASTANS_example'
+
+# Functional network map (.dlabel.nii/.dscalar.nii/.dtseries.nii file; 32k_fs_LR space)
+FCmap_filepath = '/.../FASTANS/resources/example_data/PFM/PFM_Lynch2024priors.dlabel.nii'
+
+# Subject midthickness surfaces (.surf.gii files; 32k_fs_LR space)
+surface_midthickness_left_filepath = '/.../FASTANS/resources/example_data/data/anat/midthickness_surface_left.32k_fs_LR.surf.gii'
+surface_midthickness_right_filepath = '/.../FASTANS/resources/example_data/data/anat/midthickness_surface_right.32k_fs_LR.surf.gii'
+
+# Sulcal depth map (.dscalar.nii file; 32k_fs_LR space)
+sulcal_depth_filepath = '/.../FASTANS/resources/example_data/data/anat/sulcal_depth.32k_fs_LR.dscalar.nii'
+
+# Type of FC map ('metric' or 'parcellation') — this pipeline expects 'parcellation'.
+FCmap_type = 'parcellation'
+
+# Parcellation label IDs: targets and avoidance
+target_ids = [9] # 9 = Frontoparietal
+avoidance_ids = [13,14,1,2,3,4] # 13 = Salience, 14 = Cingulo-opercular, 1-4 = Default Mode (sub)networks
+
+# Percentiles used to define E-field "hotspots" (higher = smaller, more focal)
+hotspot_percentiles = np.arange(99.0, 99.9, 0.1)
+
+# Search space restricting stimulation to left PFC (choose variant as needed)
+search_space_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'search_spaces', 'SearchSpace_PFC_L.dscalar.nii')
+# Alternative search spaces:
+# search_space_filepath = '/.../SearchSpace_PFC_L_noPCG.dscalar.nii'
+# search_space_filepath = '/.../SearchSpace_PFC_L_noPCG+DMPFC.dscalar.nii'
+# search_space_filepath = '/.../SearchSpace_PFC_L_noPCG+DMPFC+IFG.dscalar.nii'
+
+# TMS coil model (SimNIBS naming); choose matching to actual hardware
+coil_model = 'MagVenture_Cool-B65'
+```
