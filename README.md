@@ -94,3 +94,57 @@ coil_model = 'MagVenture_Cool-B65'
 
 Example outputs can be inspected in Connectome Workbench viewer (*wb_view*) by loading the FASTANS_example.scene file.
 
+This scene will visualize the following input and output files:
+
+1. The midthickness surfaces (upper row), incl. their inflated version (lower row).
+<img width="1851" height="1052" alt="Screenshot from 2025-08-30 19-27-20" src="https://github.com/user-attachments/assets/de81705c-561c-4a81-9ca3-e382dbb63327" />
+
+2. The individual functional brain parcellation (derived from the precision functional mapping (PFM) procedure described below):
+<img width="1853" height="1055" alt="Screenshot from 2025-08-30 19-27-59" src="https://github.com/user-attachments/assets/24515251-9a17-4820-bd14-64ee47f99282" />
+
+3. The "target regions", in this case the isolated frontoparietal network. This output is generated using the following lines of code:
+```
+FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'))
+```
+<img width="1850" height="1053" alt="Screenshot from 2025-08-30 19-57-05" src="https://github.com/user-attachments/assets/a98cd6bd-0064-41c1-b627-79df9ecc5ad5" />
+
+4. The "avoidance regions, in this case, the cingulo-opercular/action-mode, salience, and default mode (sub-) networks. This output is generated using the following lines of code:
+```
+FASTANS.extract_parcel(FCmap_filepath, avoidance_ids, os.path.join(output_folderpath, 'AvoidanceRegions.dlabel.nii'))
+
+```
+<img width="1852" height="1054" alt="Screenshot from 2025-08-30 19-28-09" src="https://github.com/user-attachments/assets/487da52f-9d1f-4722-a5b8-1d03d7855f50" />
+
+5. The "target patch", i.e., the largest patch of the frontoparietal target network within the search space (i.e., the left prefrontal cortex). 
+This output is generated using the following lines of code:
+```
+FASTANS.mask_cifti(os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'),
+                   'SearchSpace',
+                   search_space_filepath,
+                   'binary')
+
+FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, 'TargetRegions_SearchSpace.dlabel.nii'),
+                                      surface_midthickness_left_filepath,
+                                      surface_midthickness_right_filepath)
+```
+<img width="1850" height="1053" alt="Screenshot from 2025-08-30 19-57-05" src="https://github.com/user-attachments/assets/05fb42f9-3eee-49fb-a2ad-ec3cd6d08990" />
+
+
+6. The "target patch", i.e., the largest patch of the frontoparietal target network within the search space (i.e., the left prefrontal cortex), *restricted to the gyral crown*. 
+This output is generated using the following lines of code:
+```
+FASTANS.mask_cifti(os.path.join(output_folderpath, 'TargetRegions_SearchSpace.dlabel.nii'),
+                   'SulcalCrown',
+                   sulcal_depth_filepath,
+                   'metric',
+                   mask_threshold=0.5)
+
+FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, 'TargetRegions_SearchSpace_SulcalCrown.dlabel.nii'),
+                                      surface_midthickness_left_filepath,
+                                      surface_midthickness_right_filepath)
+```
+<img width="1851" height="1050" alt="Screenshot from 2025-08-30 19-57-09" src="https://github.com/user-attachments/assets/8e2ee28b-7258-4715-9cd4-b1551c483a2d" />
+
+
+
+
