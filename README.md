@@ -99,14 +99,17 @@ This scene will visualize the following input and output files:
 1. The midthickness surfaces (upper row), incl. their inflated version (lower row).
 <img width="1851" height="1052" alt="Screenshot from 2025-08-30 19-27-20" src="https://github.com/user-attachments/assets/de81705c-561c-4a81-9ca3-e382dbb63327" />
 
+
 2. The individual functional brain parcellation (derived from the precision functional mapping (PFM) procedure described below):
 <img width="1853" height="1055" alt="Screenshot from 2025-08-30 19-27-59" src="https://github.com/user-attachments/assets/24515251-9a17-4820-bd14-64ee47f99282" />
+
 
 3. The "target regions", in this case the isolated frontoparietal network. This output is generated using the following lines of code:
 ```
 FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'))
 ```
-<img width="1850" height="1053" alt="Screenshot from 2025-08-30 19-57-05" src="https://github.com/user-attachments/assets/a98cd6bd-0064-41c1-b627-79df9ecc5ad5" />
+<img width="1851" height="1055" alt="Screenshot from 2025-08-30 19-28-04" src="https://github.com/user-attachments/assets/c8c09ed1-5c6e-4921-909e-2794e9b47825" />
+
 
 4. The "avoidance regions, in this case, the cingulo-opercular/action-mode, salience, and default mode (sub-) networks. This output is generated using the following lines of code:
 ```
@@ -114,6 +117,7 @@ FASTANS.extract_parcel(FCmap_filepath, avoidance_ids, os.path.join(output_folder
 
 ```
 <img width="1852" height="1054" alt="Screenshot from 2025-08-30 19-28-09" src="https://github.com/user-attachments/assets/487da52f-9d1f-4722-a5b8-1d03d7855f50" />
+
 
 5. The "target patch", i.e., the largest patch of the frontoparietal target network within the search space (i.e., the left prefrontal cortex). 
 This output is generated using the following lines of code:
