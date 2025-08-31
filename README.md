@@ -97,27 +97,31 @@ Example outputs can be inspected in Connectome Workbench viewer (*wb_view*) by l
 This scene will visualize the following input and output files:
 
 1. The midthickness surfaces (upper row), incl. their inflated version (lower row).
+   
 <img width="1851" height="1052" alt="Screenshot from 2025-08-30 19-27-20" src="https://github.com/user-attachments/assets/de81705c-561c-4a81-9ca3-e382dbb63327" />
-
+<br />
 
 2. The individual functional brain parcellation (derived from the precision functional mapping (PFM) procedure described below):
+   
 <img width="1853" height="1055" alt="Screenshot from 2025-08-30 19-27-59" src="https://github.com/user-attachments/assets/24515251-9a17-4820-bd14-64ee47f99282" />
-
+<br />
 
 3. The "target regions", in this case the isolated frontoparietal network. This output is generated using the following lines of code:
 ```
 FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'))
 ```
-<img width="1851" height="1055" alt="Screenshot from 2025-08-30 19-28-04" src="https://github.com/user-attachments/assets/c8c09ed1-5c6e-4921-909e-2794e9b47825" />
 
+<img width="1851" height="1055" alt="Screenshot from 2025-08-30 19-28-04" src="https://github.com/user-attachments/assets/c8c09ed1-5c6e-4921-909e-2794e9b47825" />
+<br />
 
 4. The "avoidance regions, in this case, the cingulo-opercular/action-mode, salience, and default mode (sub-) networks. This output is generated using the following lines of code:
 ```
 FASTANS.extract_parcel(FCmap_filepath, avoidance_ids, os.path.join(output_folderpath, 'AvoidanceRegions.dlabel.nii'))
 
 ```
-<img width="1852" height="1054" alt="Screenshot from 2025-08-30 19-28-09" src="https://github.com/user-attachments/assets/487da52f-9d1f-4722-a5b8-1d03d7855f50" />
 
+<img width="1852" height="1054" alt="Screenshot from 2025-08-30 19-28-09" src="https://github.com/user-attachments/assets/487da52f-9d1f-4722-a5b8-1d03d7855f50" />
+<br />
 
 5. The "target patch", i.e., the largest patch of the frontoparietal target network within the search space (i.e., the left prefrontal cortex). 
 This output is generated using the following lines of code:
@@ -131,8 +135,9 @@ FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, 'TargetReg
                                       surface_midthickness_left_filepath,
                                       surface_midthickness_right_filepath)
 ```
-<img width="1850" height="1053" alt="Screenshot from 2025-08-30 19-57-05" src="https://github.com/user-attachments/assets/05fb42f9-3eee-49fb-a2ad-ec3cd6d08990" />
 
+<img width="1850" height="1053" alt="Screenshot from 2025-08-30 19-57-05" src="https://github.com/user-attachments/assets/05fb42f9-3eee-49fb-a2ad-ec3cd6d08990" />
+<br />
 
 6. The "target patch", i.e., the largest patch of the frontoparietal target network within the search space (i.e., the left prefrontal cortex), *restricted to the gyral crown*. 
 This output is generated using the following lines of code:
@@ -147,8 +152,120 @@ FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, 'TargetReg
                                       surface_midthickness_left_filepath,
                                       surface_midthickness_right_filepath)
 ```
+
 <img width="1851" height="1050" alt="Screenshot from 2025-08-30 19-57-09" src="https://github.com/user-attachments/assets/8e2ee28b-7258-4715-9cd4-b1551c483a2d" />
+<br />
 
+7. The final E-field simulations resulting from the optimized TMS coil placement. This output is generated using the lines of code detailed further below.
 
+<img width="1851" height="1056" alt="Screenshot from 2025-08-30 19-57-13" src="https://github.com/user-attachments/assets/96c3aa25-e2c1-49f0-9767-684fabf029e9" />
 
+Additionally, Gmsh can be used to inspect the search grids and final E-field simulation.
+
+1. Coarse search grid of TMS coil placements (step 1; zoomed-in version below). This output is generated using the following lines of code:
+```
+target_coordinates = FASTANS.extract_target_coordinates(os.path.join(output_folderpath, 'TargetRegions_SearchSpace_TargetPatch.dlabel.nii'),
+                                                        surface_midthickness_left_filepath,
+                                                        surface_midthickness_right_filepath)
+
+search_grid_coarse = FASTANS.generate_search_grid(m2m_folderpath,
+                                                  os.path.join(output_folderpath, 'SimNIBS', 'SearchGrid', 'Step1_coarse'),
+                                                  target_coordinates,
+                                                  coil_scalp_distance,
+                                                  35,  # radius
+                                                  10,  # resolution
+                                                  30,  # angle resolution
+                                                  [-90, 60])
+```
+
+<img width="1851" height="1054" alt="Screenshot from 2025-08-30 19-55-46" src="https://github.com/user-attachments/assets/03e6b9e9-53fa-4357-afca-43e0ea1fbf68" />
+<img width="1852" height="1056" alt="Screenshot from 2025-08-30 19-56-00" src="https://github.com/user-attachments/assets/76fc3f68-c0e7-4cb8-ad24-54975fdb5e7e" />
+
+2. Fine search grid of TMS coil placements (step 2; zoomed-in version below). This output is generated using the following lines of code:
+```
+simulation_results_cortex = FASTANS.simnibs_accelerated_simulations_cortex(search_grid_coarse,
+                                                                           coil_filepath,
+                                                                           didt,
+                                                                           m2m_folderpath,
+                                                                           os.path.join(output_folderpath, 'SimNIBS', 'SearchGrid', 'Step1_coarse'),
+                                                                           surface_midthickness_left_filepath,
+                                                                           surface_midthickness_right_filepath)
+
+best_coil_placements = FASTANS.extract_best_coil_placements_hotspot(simulation_results_cortex,
+                                                                    search_grid_coarse,
+                                                                    hotspot_percentiles,
+                                                                    FCmap_filepath,
+                                                                    target_ids,
+                                                                    avoidance_ids,
+                                                                    n_placements,
+                                                                    surface_midthickness_left_filepath,
+                                                                    surface_midthickness_right_filepath)
+
+target_coordinates = best_coil_placements[0][0:3, 3]
+
+search_grid_fine = FASTANS.generate_search_grid(m2m_folderpath,
+                                                os.path.join(output_folderpath, 'SimNIBS', 'SearchGrid', 'Step2_fine'),
+                                                target_coordinates,
+                                                coil_scalp_distance,
+                                                15,  # radius
+                                                5,   # resolution
+                                                10,  # angle resolution
+                                                [-90, 80])
+
+```
+<img width="1853" height="1055" alt="Screenshot from 2025-08-30 19-56-03" src="https://github.com/user-attachments/assets/bc40cb35-7fcd-43da-8eec-8001d13e15b9" />
+<img width="1852" height="1051" alt="Screenshot from 2025-08-30 19-56-11" src="https://github.com/user-attachments/assets/99be18cf-0c9b-4c71-b8be-97497d68ad38" />
+
+3. Final E-field simulation. This output is generated using the following lines of code:
+```
+simulation_results_cortex = FASTANS.simnibs_accelerated_simulations_cortex(search_grid_fine,
+                                                                           coil_filepath,
+                                                                           didt,
+                                                                           m2m_folderpath,
+                                                                           os.path.join(output_folderpath, 'SimNIBS', 'SearchGrid', 'Step2_fine'),
+                                                                           surface_midthickness_left_filepath,
+                                                                           surface_midthickness_right_filepath)
+
+best_coil_placements = FASTANS.extract_best_coil_placements_hotspot(simulation_results_cortex,
+                                                                    search_grid_fine,
+                                                                    hotspot_percentiles,
+                                                                    FCmap_filepath,
+                                                                    target_ids,
+                                                                    avoidance_ids,
+                                                                    n_placements,
+                                                                    surface_midthickness_left_filepath,
+                                                                    surface_midthickness_right_filepath)
+
+FASTANS.run_final_simulation(output_foldername,
+                             best_coil_placements,
+                             m2m_folderpath,
+                             coil_filepath,
+                             coil_scalp_distance,
+                             didt,
+                             os.path.join(output_folderpath, 'SimNIBS', 'Simulations'),
+                             surface_midthickness_left_filepath,
+                             surface_midthickness_right_filepath)
+```
+
+<img width="1853" height="1053" alt="Screenshot from 2025-08-30 19-56-25" src="https://github.com/user-attachments/assets/4e9bbe8e-f677-400c-a55f-ca1145d09f3d" />
+
+Optional: If you want to generate the individual functional network parcellation yourself, run the following lines of code after adjusting paths according to your download path of the example data:
+```
+# Full path to output folder
+output_folderpath = '/.../FASTANS/resources/example_data/PFM'
+
+# Preprocessed functional (resting-state) timecourses (.dtseries.nii file; 32k_fs_LR space)
+functional_data_filepath = '/.../FASTANS/resources/example_data/data/func/processed_restingstate_timecourses.dtseries.nii'
+
+# Subject midthickness surfaces (.surf.gii files; 32k_fs_LR space)
+surface_midthickness_left_filepath = '/.../FASTANS/resources/example_data/data/anat/midthickness_surface_left.32k_fs_LR.surf.gii'
+surface_midthickness_right_filepath = '/.../FASTANS/resources/example_data/data/anat/midthickness_surface_right.32k_fs_LR.surf.gii'
+
+# Lynch 2024 parcellation
+FASTANS.fast_pfm(functional_data_filepath,
+                 'Lynch2024',
+                 output_folderpath,
+                 surface_midthickness_left_filepath,
+                 surface_midthickness_right_filepath)
+```
 
