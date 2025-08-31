@@ -3,7 +3,7 @@
 
 **FASTANS** is an accelerated, Python-based implementation of the *Targeted Functional Network Stimulation (TANS)* approach described in Lynch et al. [1,2]. The github repository with the original Matlab code can be found here: https://github.com/cjl2007/Targeted-Functional-Network-Stimulation
 
-<img src="https://github.com/user-attachments/assets/72fab372-8161-4ff5-903e-76eaaab6ba0c" width="25" /> While the original implementation usually takes several hours to run [2], FASTANS allows optimization of TMS coil placements **within minutes**, without any particular need for high performance computing or parallelization.
+🚀 While the original implementation usually takes several hours to run [2], FASTANS allows optimization of TMS coil placements **within minutes**, without any particular need for high performance computing or parallelization.
 
 [1] *Lynch, C. J., Elbau, I. G., Ng, T. H., Wolk, D., Zhu, S., Ayaz, A., ... & Liston, C. (2022). Automated optimization of TMS coil placement for personalized functional network engagement. Neuron, 110(20), 3263-3277.*
 
@@ -101,12 +101,12 @@ This scene will visualize the following input and output files:
 <img width="1851" height="1052" alt="Screenshot from 2025-08-30 19-27-20" src="https://github.com/user-attachments/assets/de81705c-561c-4a81-9ca3-e382dbb63327" />
 <br />
 
-2. The individual functional brain parcellation (derived from the precision functional mapping (PFM) procedure described below):
+2. The individual functional network parcellation (derived from the precision functional mapping (PFM) procedure described below):
    
 <img width="1853" height="1055" alt="Screenshot from 2025-08-30 19-27-59" src="https://github.com/user-attachments/assets/24515251-9a17-4820-bd14-64ee47f99282" />
 <br />
 
-3. The "target regions", in this case the isolated frontoparietal network. This output is generated using the following lines of code:
+3. The "target regions" -- in this case, the frontoparietal network. This output is generated using the following lines of code:
 ```
 FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'))
 ```
@@ -114,7 +114,7 @@ FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folder
 <img width="1851" height="1055" alt="Screenshot from 2025-08-30 19-28-04" src="https://github.com/user-attachments/assets/c8c09ed1-5c6e-4921-909e-2794e9b47825" />
 <br />
 
-4. The "avoidance regions, in this case, the cingulo-opercular/action-mode, salience, and default mode (sub-) networks. This output is generated using the following lines of code:
+4. The "avoidance regions -- in this case, the cingulo-opercular/action-mode, salience, and default mode (sub-) networks. This output is generated using the following lines of code:
 ```
 FASTANS.extract_parcel(FCmap_filepath, avoidance_ids, os.path.join(output_folderpath, 'AvoidanceRegions.dlabel.nii'))
 
