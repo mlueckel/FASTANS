@@ -108,7 +108,9 @@ This scene will visualize the following input and output files:
 
 3. The "target regions" -- in this case, the frontoparietal network. This output is generated using the following lines of code:
 ```
-FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'))
+FASTANS.extract_parcel(FCmap_filepath, target_ids,
+                       os.path.join(output_folderpath,
+                       'TargetRegions.dlabel.nii'))
 ```
 
 <img width="1851" height="1055" alt="Screenshot from 2025-08-30 19-28-04" src="https://github.com/user-attachments/assets/c8c09ed1-5c6e-4921-909e-2794e9b47825" />
@@ -116,7 +118,9 @@ FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folder
 
 4. The "avoidance regions -- in this case, the cingulo-opercular/action-mode, salience, and default mode (sub-) networks. This output is generated using the following lines of code:
 ```
-FASTANS.extract_parcel(FCmap_filepath, avoidance_ids, os.path.join(output_folderpath, 'AvoidanceRegions.dlabel.nii'))
+FASTANS.extract_parcel(FCmap_filepath, avoidance_ids,
+                       os.path.join(output_folderpath,
+                       'AvoidanceRegions.dlabel.nii'))
 
 ```
 
