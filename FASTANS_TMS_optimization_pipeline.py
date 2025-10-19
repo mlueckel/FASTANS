@@ -54,10 +54,10 @@ output_foldername = 'output_foldername'
 output_folderpath = os.path.join('/path/to/output/folder', output_foldername)
 
 # Path to subject-specific SimNIBS m2m folder
-m2m_folderpath = ''
+m2m_folderpath = '/path/to/m2m_folder'
 
 # Functional network map (.dlabel.nii/.dscalar.nii/.dtseries.nii file; 32k_fs_LR space)
-FCmap_filepath = '/path/to/m2m_folder'
+FCmap_filepath = '/path/to/FCmap_cifti_file'
 
 # Subject midthickness surfaces (.surf.gii files; 32k_fs_LR space)
 surface_midthickness_left_filepath = '/path/to/left_midthickness_surface.surf.gii'
