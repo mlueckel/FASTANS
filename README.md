@@ -12,17 +12,28 @@
 
 # Use cases
 FASTANS supports three use cases/file format configurations (for illustration, see figure below). TMS coil placements can be optimized based on:
-1. *Continuous* FC maps in T1 *volume* space
+1. **Continuous** FC maps in T1 **volume** space
+
    Example scripts:
+
    Negative FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_volume_negative_FC.py*
+   
    Positive FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_volume_negative_FC.py*
-2. *Continuous* FC maps in *surface* space (fs_LR_32k)
+   
+3. **Continuous** FC maps in **surface** space (fs_LR_32k)
+
    Example scripts:
+   
    Negative FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_surface_negative_FC.py*
+   
    Positive FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_surface_positive_FC.py*
-3. *Parcellated* FC maps in *surface* space (fs_LR_32k)
+   
+5. **Parcellated** FC maps in **surface** space (fs_LR_32k)
+
    Example script:
+   
    *FASTANS_TMS_optimization_pipeline_EXAMPLE_parcellated_FC_surface.py*
+
 
 Note: The example below follows use case 3.
 
