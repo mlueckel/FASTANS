@@ -35,6 +35,10 @@ FASTANS supports three use cases/file format configurations (for illustration, s
    *FASTANS_TMS_optimization_pipeline_EXAMPLE_parcellated_FC_surface.py*
 
 
+<img src="https://github.com/user-attachments/assets/1cceb2c6-f44e-4be6-9c95-a903b5b62082" width="800"/>
+
+
+
 Note: The example below follows use case 3.
 
 
