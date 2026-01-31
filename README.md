@@ -10,6 +10,23 @@
 [2] *Lynch, C. J., Elbau, I. G., Zhu, S., Ayaz, A., Bukhari, H., Power, J. D., & Liston, C. (2023). Precision mapping and transcranial magnetic stimulation of individual-specific functional brain networks in humans. STAR protocols, 4(1), 102118.*
 
 
+# Use cases
+FASTANS supports three use cases/file format configurations (for illustration, see figure below). TMS coil placements can be optimized based on:
+1. *Continuous* FC maps in T1 *volume* space
+   Example scripts:
+   Negative FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_volume_negative_FC.py*
+   Positive FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_volume_negative_FC.py*
+2. *Continuous* FC maps in *surface* space (fs_LR_32k)
+   Example scripts:
+   Negative FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_surface_negative_FC.py*
+   Positive FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_surface_positive_FC.py*
+3. *Parcellated* FC maps in *surface* space (fs_LR_32k)
+   Example script:
+   *FASTANS_TMS_optimization_pipeline_EXAMPLE_parcellated_FC_surface.py*
+
+Note: The example below follows use case 3.
+
+
 # Installation
 1. Download/clone this code repository.
 2. In *FASTANS_TMS_optimization_pipeline.py* and *FASTANS.py* (within the *code* folder), edit the *FASTANS_installation_folderpath* variable according to your download location of the FASTANS code repository.
