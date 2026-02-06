@@ -1,4 +1,9 @@
 # FASTANS - Fast Targeted Functional Network Stimulation
+
+
+<a href="https://doi.org/10.5281/zenodo.17099121"><img src="https://zenodo.org/badge/1045136534.svg" alt="DOI"></a>
+
+
 <img src="https://github.com/user-attachments/assets/c11ab74d-8d21-4092-a262-328c50185f49" width="600" />
 
 **FASTANS** is an accelerated, Python-based implementation of the *Targeted Functional Network Stimulation (TANS)* approach described in Lynch et al. [1,2]. The github repository with the original Matlab code can be found here: https://github.com/cjl2007/Targeted-Functional-Network-Stimulation
