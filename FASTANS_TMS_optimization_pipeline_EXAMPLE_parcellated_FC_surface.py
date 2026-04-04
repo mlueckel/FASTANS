@@ -59,11 +59,6 @@ m2m_folderpath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTAN
 # Functional network map (.dlabel.nii/.dscalar.nii/.dtseries.nii file; 32k_fs_LR space)
 FCmap_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/PFM/PFM_Lynch2024priors.dlabel.nii'
 
-m2m_folderpath = '/path/to/m2m_folder'
-
-# Functional network map (.dlabel.nii/.dscalar.nii/.dtseries.nii file; 32k_fs_LR space)
-FCmap_filepath = '/path/to/FCmap_cifti_file'
-
 # Subject midthickness surfaces (.surf.gii files; 32k_fs_LR space)
 surface_midthickness_left_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/data/anat/midthickness_surface_left.32k_fs_LR.surf.gii'
 surface_midthickness_right_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/data/anat/midthickness_surface_right.32k_fs_LR.surf.gii'

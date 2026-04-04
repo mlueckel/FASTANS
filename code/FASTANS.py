@@ -1398,7 +1398,7 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
     ----------
     timeseries_filepath : str
         Input CIFTI dtseries path (surface-aligned; 32k_fs_LR).
-    parcellation : {'Lynch2024', 'Hermosillo2024'}
+    parcellation : {'Lynch2024', 'Hermosillo2024', 'Kong2019'}
         Choice of priors/labels.
     output_folderpath : str
         Output directory.
@@ -1420,6 +1420,9 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
     elif parcellation == 'Hermosillo2024':
         priors_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Hermosillo2024', 'Hermosillo2024_priors.pickle')
         labels_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Hermosillo2024', 'Hermosillo2024_LabelList.txt')
+    elif parcellation == 'Kong2019':
+        priors_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Kong2019', 'Kong2019_priors.pickle')
+        labels_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Kong2019', 'Kong2019_LabelList.txt')
 
     cifti_template_cortex = load_cifti_values(os.path.join(resources_folderpath, 'templates', 'CORTEX.32k_fs_LR.dscalar.nii'))
 
@@ -1502,6 +1505,13 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
                 os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.dlabel.nii')))
 
     os.system('rm ' + os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.dscalar.nii'))
+    
+    os.system('wb_command -cifti-label-to-border {} -border {} {} -border {} {}'.format(
+                os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.dlabel.nii'),
+                surface_midthickness_left_filepath,
+                os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.L.border'),
+                surface_midthickness_right_filepath,
+                os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.R.border')))
     
 
 # def compute_functional_connectivity(seed_array, timeseries_array):
