@@ -1,0 +1,34 @@
+VentralAttentionB
+1 255 152 213 255
+ControlA
+2 230 148 34 255
+VisualA
+3 120 18 134 255
+TemporalParietal
+4 12 48 255 255
+DorsalAttentionA
+5 74 155 60 255
+ControlC
+6 119 140 176 255
+DefaultA
+7 255 255 0 255
+ControlB
+8 135 50 74 255
+VentralAttentionA
+9 196 58 250 255
+VisualB
+10 255 0 0 255
+SomatomotorA
+11 70 130 180 255
+DefaultB
+12 205 62 78 255
+DefaultC
+13 0 0 130 255
+SomatomotorB
+14 42 204 164 255
+DorsalAttentionB
+15 0 118 14 255
+Auditory
+16 220 248 164 255
+VisualC
+17 122 135 50 255

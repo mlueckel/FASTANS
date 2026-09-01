@@ -34,6 +34,7 @@ Requirements
 Author: Maximilian Lueckel, mlueckel@uni-mainz.de
 """
 import os
+import shutil
 import numpy as np
 
 #=============================================================================
@@ -48,38 +49,43 @@ simnibs_installation_path = '/home/maximilian/SimNIBS-4.5'
 #=============================================================================
 
 # Name of output folder
-output_foldername = 'output_foldername'
+output_foldername = 'sgACC_positiveFC_surface'
 
 # Full path to output folder
-output_folderpath = os.path.join('/path/to/output/folder', output_foldername)
+output_folderpath = os.path.join('/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/FC_continuous/surface/FASTANS', output_foldername)
 
 # Path to subject-specific SimNIBS m2m folder
-m2m_folderpath = '/path/to/m2m_folder'
+m2m_folderpath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/FC_continuous/volume/m2m_FASTANS_example'
 
 # Functional network map (.dlabel.nii/.dscalar.nii/.dtseries.nii file; 32k_fs_LR space)
-FCmap_filepath = '/path/to/FCmap_cifti_file'
+FCmap_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/FC_continuous/surface/data/FC/FC_sgACC_anticorrelated.dscalar.nii'
 
 # Subject midthickness surfaces (.surf.gii files; 32k_fs_LR space)
-surface_midthickness_left_filepath = '/path/to/left_midthickness_surface.surf.gii'
-surface_midthickness_right_filepath = '/path/to/right_midthickness_surface.surf.gii'
+surface_midthickness_left_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/FC_continuous/surface/data/anat/midthickness_surface_left.32k_fs_LR.surf.gii'
+surface_midthickness_right_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/FC_continuous/surface/data/anat/midthickness_surface_right.32k_fs_LR.surf.gii'
 
 # Sulcal depth map (.dscalar.nii file; 32k_fs_LR space)
-sulcal_depth_filepath = '/path/to/suclal_depth.dscalar.nii'
+sulcal_depth_filepath = '/media/maximilian/e4713b47-344e-4ac6-85dd-b6769e0cbfa81/FASTANS/resources/example_data/FC_continuous/surface/data/anat/sulcal_depth.32k_fs_LR.dscalar.nii'
 
-# Type of FC map ('metric' or 'parcellation') — this pipeline expects 'parcellation'.
-FCmap_type = 'parcellation'
+# Type of FC map ('metric' or 'parcellation') — this pipeline expects 'metric'.
+FCmap_type = 'metric'
 
-# Parcellation label IDs: targets and avoidance
-target_ids = [16]       # 16 = Somatomotor_Hand
-avoidance_ids = [17,18] # 17 = Somatomotor_Face, 18 = Somatomotor_Foot
+# Valence of FC target of interest ('negative' or 'positive')
+FC_target_valence = 'positive'
+
+# FC treshold:
+# Retain FC values that are:
+# < FC_threshold, if FC_target_valence = 'negative'
+# > FC_threshold, if FC_target_valence = 'positive'
+FC_threshold = 0
 
 # Percentiles used to define E-field "hotspots" (higher = smaller, more focal)
 hotspot_percentiles = np.arange(99.0, 99.9, 0.1)
 
 # Search space restricting stimulation to left PFC (choose variant as needed)
-search_space_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'search_spaces', 'SearchSpace_PFC_L.dscalar.nii')
+search_space_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'search_spaces', 'SearchSpace_PFC_L_noPCG.dscalar.nii')
 # Alternative search spaces:
-# search_space_filepath = '/.../SearchSpace_PFC_L_noPCG.dscalar.nii'
+# search_space_filepath = '/.../SearchSpace_PFC_L.dscalar.nii'
 # search_space_filepath = '/.../SearchSpace_PFC_L_noPCG+DMPFC.dscalar.nii'
 # search_space_filepath = '/.../SearchSpace_PFC_L_noPCG+DMPFC+IFG.dscalar.nii'
 
@@ -109,7 +115,7 @@ coil_filepath = os.path.join(simnibs_installation_path, 'resources', 'coil_model
 import sys
 sys.path.append(os.path.join(FASTANS_installation_folderpath, 'code'))
 os.chdir(os.path.join(FASTANS_installation_folderpath, 'code'))
-import FASTANS
+import FASTANS as FASTANS
 
 #=============================================================================
 # Pipeline
@@ -118,32 +124,46 @@ import FASTANS
 # Prepare output directory
 os.makedirs(output_folderpath, exist_ok=True)
 
-# -- (1) Extract target & avoidance regions ----------------------------------
-FASTANS.extract_parcel(FCmap_filepath, target_ids,    os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'))
-FASTANS.extract_parcel(FCmap_filepath, avoidance_ids, os.path.join(output_folderpath, 'AvoidanceRegions.dlabel.nii'))
+# Copy over the FC map
+shutil.copy(FCmap_filepath, output_folderpath)
 
-# -- (2) Constrain target by (a) search space and (b) sulcal crown ------------
-# (a) Search space masking + keep largest cluster
-FASTANS.mask_cifti(os.path.join(output_folderpath, 'TargetRegions.dlabel.nii'),
+# -- Extract target cluster --------------------------------------------------
+# (a) Search space masking
+FASTANS.mask_cifti(os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1]),
                    'SearchSpace',
                    search_space_filepath,
                    'binary')
-FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, 'TargetRegions_SearchSpace.dlabel.nii'),
-                                      surface_midthickness_left_filepath,
-                                      surface_midthickness_right_filepath)
 
-# (b) Sulcal crown (metric) threshold + keep largest cluster
-FASTANS.mask_cifti(os.path.join(output_folderpath, 'TargetRegions_SearchSpace.dlabel.nii'),
+# (b) Sulcal crown (metric) threshold
+FASTANS.mask_cifti(os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace.dscalar.nii'),
                    'SulcalCrown',
                    sulcal_depth_filepath,
                    'metric',
-                   mask_threshold=0.5)
-FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, 'TargetRegions_SearchSpace_SulcalCrown.dlabel.nii'),
+                   mask_threshold=0.5,
+                   threshold_direction='greater')
+
+if FC_target_valence == 'positive':
+    FASTANS.mask_cifti(os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace_SulcalCrown.dscalar.nii'),
+                       FC_target_valence + 'FC',
+                       os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace_SulcalCrown.dscalar.nii'),
+                       'metric',
+                       mask_threshold=FC_threshold,
+                       threshold_direction='greater')
+elif FC_target_valence == 'negative':
+    FASTANS.mask_cifti(os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace_SulcalCrown.dscalar.nii'),
+                       FC_target_valence + 'FC',
+                       os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace_SulcalCrown.dscalar.nii'),
+                       'metric',
+                       mask_threshold=FC_threshold,
+                       threshold_direction='smaller')
+
+FASTANS.cifti_extract_largest_cluster(os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace_SulcalCrown_' + FC_target_valence + 'FC.dscalar.nii'),
                                       surface_midthickness_left_filepath,
                                       surface_midthickness_right_filepath)
 
+
 # -- (3) Coarse grid generation over the target patch -------------------------
-target_coordinates = FASTANS.extract_target_coordinates(os.path.join(output_folderpath, 'TargetRegions_SearchSpace_TargetPatch.dlabel.nii'),
+target_coordinates = FASTANS.extract_target_coordinates(os.path.join(output_folderpath, os.path.split(FCmap_filepath)[1].replace('.dscalar.nii', '') + '_SearchSpace_SulcalCrown_' + FC_target_valence + 'FC_TargetPatch.dlabel.nii'),
                                                         surface_midthickness_left_filepath,
                                                         surface_midthickness_right_filepath)
 
@@ -168,15 +188,14 @@ simulation_results_cortex = FASTANS.simnibs_accelerated_simulations_cortex(searc
 search_grid_coarse, simulation_results_cortex = FASTANS.load_simulation_results(os.path.join(output_folderpath, 'SimNIBS', 'SearchGrid', 'Step1_coarse', 'simulation_results.pickle'))
 
 # -- (5) Rank placements by hotspot overlap ----------------------------------
-best_coil_placements = FASTANS.extract_best_coil_placements_hotspot(simulation_results_cortex,
-                                                                    search_grid_coarse,
-                                                                    hotspot_percentiles,
-                                                                    FCmap_filepath,
-                                                                    target_ids,
-                                                                    avoidance_ids,
-                                                                    n_placements,
-                                                                    surface_midthickness_left_filepath,
-                                                                    surface_midthickness_right_filepath)
+best_coil_placements = FASTANS.extract_best_coil_placements_FC_hotspot(simulation_results_cortex,
+                                                                       search_grid_coarse,
+                                                                       hotspot_percentiles,
+                                                                       FCmap_filepath,
+                                                                       FC_target_valence,
+                                                                       n_placements,
+                                                                       surface_midthickness_left_filepath,
+                                                                       surface_midthickness_right_filepath)
 
 # -- (6) Fine grid around the best coarse placement ---------------------------
 target_coordinates = best_coil_placements[0][0:3, 3]
@@ -201,15 +220,14 @@ simulation_results_cortex = FASTANS.simnibs_accelerated_simulations_cortex(searc
 
 search_grid_fine, simulation_results_cortex = FASTANS.load_simulation_results(os.path.join(output_folderpath, 'SimNIBS', 'SearchGrid', 'Step2_fine', 'simulation_results.pickle'))
 
-best_coil_placements = FASTANS.extract_best_coil_placements_hotspot(simulation_results_cortex,
-                                                                    search_grid_fine,
-                                                                    hotspot_percentiles,
-                                                                    FCmap_filepath,
-                                                                    target_ids,
-                                                                    avoidance_ids,
-                                                                    n_placements,
-                                                                    surface_midthickness_left_filepath,
-                                                                    surface_midthickness_right_filepath)
+best_coil_placements = FASTANS.extract_best_coil_placements_FC_hotspot(simulation_results_cortex,
+                                                                       search_grid_fine,
+                                                                       hotspot_percentiles,
+                                                                       FCmap_filepath,
+                                                                       FC_target_valence,
+                                                                       n_placements,
+                                                                       surface_midthickness_left_filepath,
+                                                                       surface_midthickness_right_filepath)
 
 # -- (7) Final FEM runs and exports -------------------------------------------
 FASTANS.run_final_simulation(output_foldername,

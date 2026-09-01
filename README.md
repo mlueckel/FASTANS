@@ -15,10 +15,42 @@
 [2] *Lynch, C. J., Elbau, I. G., Zhu, S., Ayaz, A., Bukhari, H., Power, J. D., & Liston, C. (2023). Precision mapping and transcranial magnetic stimulation of individual-specific functional brain networks in humans. STAR protocols, 4(1), 102118.*
 
 
+# Use cases
+FASTANS supports three use cases/file format configurations (for illustration, see figure below). TMS coil placements can be optimized based on:
+1. **Continuous** FC maps in T1 **volume** space
+
+   Example scripts:
+
+   Negative FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_volume_negative_FC.py*
+   
+   Positive FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_volume_negative_FC.py*
+   
+3. **Continuous** FC maps in **surface** space (fs_LR_32k)
+
+   Example scripts:
+   
+   Negative FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_surface_negative_FC.py*
+   
+   Positive FC target: *FASTANS_TMS_optimization_pipeline_EXAMPLE_continuous_FC_surface_positive_FC.py*
+   
+5. **Parcellated** FC maps in **surface** space (fs_LR_32k)
+
+   Example script:
+   
+   *FASTANS_TMS_optimization_pipeline_EXAMPLE_parcellated_FC_surface.py*
+
+
+<img src="https://github.com/user-attachments/assets/1cceb2c6-f44e-4be6-9c95-a903b5b62082" width="800"/>
+
+
+
+Note: The example below follows use case 3.
+
+
 # Installation
 1. Download/clone this code repository.
-2. In *FASTANS_TMS_optimization_pipeline.py* and *FASTANS.py* (within the *code* folder), edit the *FASTANS_installation_folderpath* variable according to your download location of the FASTANS code repository.
-3. Additionally: In *FASTANS_TMS_optimization_pipeline.py*, edit the *simnibs_installation_path* variable according to the location of your SimNIBS 4.5 installation - this is needed to find the correct TMS coil (.ccd) files provided by SimNIBS (usually stored in */SimNIBSInstallationFolder/resources/coil_models/Drakaki_BrainStim_2022/*).
+2. In the example script(s) above (*FASTANS_TMS_optimization_pipeline_EXAMPLE_XXX.py*) and *FASTANS.py* (within the *code* folder), edit the *FASTANS_installation_folderpath* variable according to your download location of the FASTANS code repository.
+3. Additionally: In the example script(s) above (*FASTANS_TMS_optimization_pipeline_EXAMPLE_XXX.py*), edit the *simnibs_installation_path* variable according to the location of your SimNIBS 4.5 installation - this is needed to find the correct TMS coil (.ccd) files provided by SimNIBS (usually stored in */SimNIBSInstallationFolder/resources/coil_models/Drakaki_BrainStim_2022/*).
 
 **Software dependencies:**
 - Connectome Workbench (https://humanconnectome.org/software/get-connectome-workbench) - needs to be available in $PATH.

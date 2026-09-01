@@ -412,7 +412,7 @@ def extract_parcel(parcellation_filepath, parcel_id_list, output_filepath):
     os.system('rm ' + os.path.join(output_path, output_filename + '_binary.dscalar.nii'))
 
 
-def mask_cifti(cifti_filepath, suffix, mask_filepath, mask_type, mask_threshold=None):
+def mask_cifti(cifti_filepath, suffix, mask_filepath, mask_type, mask_threshold=None, threshold_direction=None):
     """
     Mask a CIFTI map with either a binary ROI or a metric threshold.
 
@@ -429,18 +429,23 @@ def mask_cifti(cifti_filepath, suffix, mask_filepath, mask_type, mask_threshold=
         - 'metric' : zero out where mask < *mask_threshold*
     mask_threshold : float, optional
         Threshold for metric masking; ignored for binary masking.
+    threshold_direction: {'greater', 'smaller'}
+        - 'greater' : retain all values greater (or equal) than <mask_threshold>
+        - 'smaller' : retain all values smaller (or equal) than <mask_threshold>
 
     Outputs
     -------
     Writes ``<input>_<suffix>.dlabel.nii`` and removes intermediate scalar.
     """
     import os
+    from pathlib import Path
 
     cifti_template_cortex_filepath = os.path.join(resources_folderpath, 'templates', 'CORTEX.32k_fs_LR.dscalar.nii')
 
     cifti_path = os.path.split(cifti_filepath)[0]
     cifti_filename = os.path.split(cifti_filepath)[1].replace('.dlabel.nii', '')
     cifti_filename = os.path.split(cifti_filename)[1].replace('.dscalar.nii', '')
+    cifti_suffix = "".join(Path(cifti_filepath).suffixes)
 
     cifti_values = load_cifti_values(cifti_filepath)
     mask_values = load_cifti_values(mask_filepath)
@@ -450,18 +455,26 @@ def mask_cifti(cifti_filepath, suffix, mask_filepath, mask_type, mask_threshold=
         cifti_values_masked[mask_values == 0] = 0
 
         array_to_cifti_dscalar(cifti_values_masked, cifti_template_cortex_filepath, os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'))
-        cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'), cifti_filepath)
+        
+        if cifti_suffix == '.dlabel.nii':
+            cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'), cifti_filepath)
 
-        os.system('rm ' + os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'))
+            os.system('rm ' + os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'))
 
     elif mask_type == "metric":
         cifti_values_masked = cifti_values.copy()
-        cifti_values_masked[mask_values < mask_threshold] = 0
+        
+        if threshold_direction == 'greater':
+            cifti_values_masked[mask_values < mask_threshold] = 0
+        if threshold_direction == 'smaller':
+            cifti_values_masked[mask_values > mask_threshold] = 0
 
         array_to_cifti_dscalar(cifti_values_masked, cifti_template_cortex_filepath, os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'))
-        cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'), cifti_filepath)
+       
+        if cifti_suffix == '.dlabel.nii':
+            cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'), cifti_filepath)
 
-        os.system('rm ' + os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'))
+            os.system('rm ' + os.path.join(cifti_path, cifti_filename + '_' + suffix + '.dscalar.nii'))
 
 
 def cifti_extract_largest_cluster(cifti_filepath, surface_midthickness_left_filepath, surface_midthickness_right_filepath):
@@ -479,16 +492,27 @@ def cifti_extract_largest_cluster(cifti_filepath, surface_midthickness_left_file
         32k_fs_LR midthickness surfaces used by Workbench.
     """
     import os
+    import numpy as np
 
     cifti_path = os.path.split(cifti_filepath)[0]
     cifti_filename = os.path.split(cifti_filepath)[1].replace('.dlabel.nii', '')
     cifti_filename = os.path.split(cifti_filename)[1].replace('.dscalar.nii', '')
+    
+    cifti_data = load_cifti_values(cifti_filepath)
+    cifti_data_sum = np.sum(cifti_data)
 
-    os.system('wb_command -cifti-find-clusters {} 0 0 0 0 COLUMN {} -left-surface {} -right-surface {} -size-ratio 100 100'.format(
-        cifti_filepath,
-        os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'),
-        surface_midthickness_left_filepath,
-        surface_midthickness_right_filepath))
+    if cifti_data_sum > 0:
+        os.system('wb_command -cifti-find-clusters {} 0 0 0 0 COLUMN {} -left-surface {} -right-surface {} -size-ratio 100 100'.format(
+            cifti_filepath,
+            os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'),
+            surface_midthickness_left_filepath,
+            surface_midthickness_right_filepath))
+    if cifti_data_sum < 0:
+        os.system('wb_command -cifti-find-clusters {} 0 0 0 0 COLUMN {} -less-than -left-surface {} -right-surface {} -size-ratio 100 100'.format(
+            cifti_filepath,
+            os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'),
+            surface_midthickness_left_filepath,
+            surface_midthickness_right_filepath))
 
     cifti_dscalar_to_dlabel(os.path.join(cifti_path, cifti_filename + '_TargetPatch.dscalar.nii'), os.path.join(resources_folderpath, 'templates', 'ROILabelsTemplate.txt'))
 
@@ -1374,7 +1398,7 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
     ----------
     timeseries_filepath : str
         Input CIFTI dtseries path (surface-aligned; 32k_fs_LR).
-    parcellation : {'Lynch2024', 'Hermosillo2024'}
+    parcellation : {'Lynch2024', 'Hermosillo2024', 'Kong2019'}
         Choice of priors/labels.
     output_folderpath : str
         Output directory.
@@ -1396,6 +1420,9 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
     elif parcellation == 'Hermosillo2024':
         priors_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Hermosillo2024', 'Hermosillo2024_priors.pickle')
         labels_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Hermosillo2024', 'Hermosillo2024_LabelList.txt')
+    elif parcellation == 'Kong2019':
+        priors_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Kong2019', 'Kong2019_priors.pickle')
+        labels_filepath = os.path.join(FASTANS_installation_folderpath, 'resources', 'PFM', 'priors', 'Kong2019', 'Kong2019_LabelList.txt')
 
     cifti_template_cortex = load_cifti_values(os.path.join(resources_folderpath, 'templates', 'CORTEX.32k_fs_LR.dscalar.nii'))
 
@@ -1478,3 +1505,679 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
                 os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.dlabel.nii')))
 
     os.system('rm ' + os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.dscalar.nii'))
+    
+    os.system('wb_command -cifti-label-to-border {} -border {} {} -border {} {}'.format(
+                os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.dlabel.nii'),
+                surface_midthickness_left_filepath,
+                os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.L.border'),
+                surface_midthickness_right_filepath,
+                os.path.join(output_folderpath, 'PFM_' + parcellation + 'priors.R.border')))
+    
+
+# def compute_functional_connectivity(seed_array, timeseries_array):
+    
+#     import numpy as np
+    
+#     average_seed_timeseries = 
+    
+    
+# def extract_best_coil_placements_FC_hotspot(simulation_results, search_grid, hotspot_percentiles, FCmap_filepath, FC_target_valence, n_placements, surface_midthickness_left_filepath, surface_midthickness_right_filepath):
+    
+#     """
+#     Rank placements by how much of the high-E-field *hotspot* falls within
+#     target vs. avoidance networks defined by a parcellation.
+
+#     For each placement and each percentile p in *hotspot_percentiles*:
+#     - threshold the cortex E-field at p%
+#     - compute the fraction of hotspot area inside *target* labels and inside
+#       *avoidance* labels (or the complement if ``avoidance_id_list`` empty)
+#     - average fractions across percentiles
+#     - score = ``2/3 * mean(target_frac) - 1/3 * mean(avoidance_frac)``
+
+#     Parameters
+#     ----------
+#     simulation_results : numpy.ndarray, shape (N_positions, 64984)
+#         Per-vertex E-field magnitudes.
+#     search_grid : list
+#         Coil placements.
+#     hotspot_percentiles : array_like
+#         Percentiles (e.g., 99.0..99.8) used to define hotspots.
+#     FCmap_filepath : str
+#         Parcellation CIFTI where integers encode network IDs.
+#     FC_target_values : {'positive', 'negative'}
+#         'positive' : maximize E-field hotspot in positive FC areas
+#         'negative' : maximize E-field hotspot in negative FC areas
+#     n_placements : int
+#         How many top placements to return.
+#     surface_midthickness_left_filepath, surface_midthickness_right_filepath : str
+#         For area computations (vertex area per hemisphere).
+
+#     Returns
+#     -------
+#     list
+#         Top placements maximizing hotspot mass in targets while minimizing in avoidance.
+#     """
+#     import numpy as np
+
+#     FCmap_values = load_cifti_values(FCmap_filepath)
+
+#     simulation_hotspots = np.zeros([simulation_results.shape[0], simulation_results.shape[1], len(hotspot_percentiles)])
+#     FCmap_hotspots = np.zeros([simulation_results.shape[0], simulation_results.shape[1], len(hotspot_percentiles)])
+    
+#     FCmap_hotspots_average = np.zeros([simulation_results.shape[0], simulation_results.shape[1]])
+
+#     for i in np.arange(simulation_results.shape[0]):
+#         for j in np.arange(len(hotspot_percentiles)):
+#             hotspot_tmp = simulation_results[i, :].copy()
+#             percentile_value = np.percentile(hotspot_tmp, hotspot_percentiles[j])
+#             hotspot_tmp[hotspot_tmp < percentile_value] = 0
+#             hotspot_tmp[hotspot_tmp >= percentile_value] = 1
+
+#             simulation_hotspots[i, :, j] = hotspot_tmp
+#             FCmap_hotspots[i, :, j] = np.multiply(FCmap_values, hotspot_tmp)
+            
+#     FCmap_hotspots_average = np.asarray([np.nanmean(FCmap_hotspots[i,:,:], axis=1) for i in np.arange(simulation_results.shape[0])])
+
+#     FCmap_hotspots_average_sum = np.nansum(FCmap_hotspots_average, axis=1)
+    
+#     if FC_target_valence == 'positive':
+#         best_coil_placements_indices = (-np.array(FCmap_hotspots_average_sum)).argsort()[:n_placements]
+#     elif FC_target_valence == 'negative':
+#         best_coil_placements_indices = (np.array(FCmap_hotspots_average_sum)).argsort()[:n_placements]
+        
+#     best_coil_placements = [search_grid[i] for i in best_coil_placements_indices]
+
+#     return best_coil_placements
+
+
+def extract_best_coil_placements_FC_hotspot(
+    simulation_results, search_grid, hotspot_percentiles, FCmap_filepath,
+    FC_target_valence, n_placements,
+    surface_midthickness_left_filepath, surface_midthickness_right_filepath
+):
+    import numpy as np
+
+    FCmap_values = load_cifti_values(FCmap_filepath)  # shape (64984,)
+    n_placements_total = simulation_results.shape[0]
+    n_percentiles = len(hotspot_percentiles)
+
+    FCmap_hotspots_average_sum = np.zeros(n_placements_total, dtype=np.float64)
+
+    for i in range(n_placements_total):
+        efield = simulation_results[i, :]           # shape (64984,)
+        running_mean = np.zeros(efield.shape, dtype=np.float64)
+
+        for j, pct in enumerate(hotspot_percentiles):
+            threshold = np.percentile(efield, pct)
+            hotspot_mask = (efield >= threshold).astype(np.float64)  # 0/1
+            fc_masked = FCmap_values * hotspot_mask                  # shape (64984,)
+            # Welford-style incremental mean to avoid stacking
+            running_mean += (fc_masked - running_mean) / (j + 1)
+
+        FCmap_hotspots_average_sum[i] = np.nansum(running_mean)
+
+    if FC_target_valence == 'positive':
+        best_indices = (-FCmap_hotspots_average_sum).argsort()[:n_placements]
+    elif FC_target_valence == 'negative':
+        best_indices = FCmap_hotspots_average_sum.argsort()[:n_placements]
+
+    return [search_grid[i] for i in best_indices], best_indices
+
+
+#==============================================================================
+# Generate white matter surface from SimNIBS/charm surfaces
+#==============================================================================
+
+import os
+import re
+import numpy as np
+import nibabel as nib
+
+def load_surf_gii(path):
+    g = nib.load(path)
+    coords = g.darrays[0].data.astype(np.float64)
+    faces  = g.darrays[1].data.astype(np.int32)
+    return coords, faces, g
+
+def save_surf_gii(path, coords, faces, like_gifti):
+    # Build a GIfTI surface mirroring metadata from an existing GIfTI
+    da_coords = nib.gifti.GiftiDataArray(
+        data=coords.astype(np.float32),
+        intent=nib.nifti1.intent_codes['NIFTI_INTENT_POINTSET']
+    )
+    da_faces = nib.gifti.GiftiDataArray(
+        data=faces.astype(np.int32),
+        intent=nib.nifti1.intent_codes['NIFTI_INTENT_TRIANGLE']
+    )
+    out = nib.gifti.GiftiImage(darrays=[da_coords, da_faces])
+    # copy over meta if present
+    out.meta = like_gifti.meta
+    nib.save(out, path)
+
+def compute_vertex_normals(verts, faces):
+    # Face normals
+    v0 = verts[faces[:,1]] - verts[faces[:,0]]
+    v1 = verts[faces[:,2]] - verts[faces[:,0]]
+    fn = np.cross(v0, v1)
+    # Accumulate to vertices
+    vn = np.zeros_like(verts)
+    for i, f in enumerate(faces):
+        vn[f] += fn[i]
+    # Normalize
+    l = np.linalg.norm(vn, axis=1)
+    l[l == 0] = 1.0
+    vn /= l[:, None]
+    return vn
+
+def try_load_thickness(thick_path, n_vertices):
+    """
+    Return per-vertex thickness (float64) or None if not available.
+    Tries GIfTI metric first; then FreeSurfer morph (curv) as fallback.
+    """
+    if not os.path.exists(thick_path):
+        # Try common variants
+        candidates = [thick_path + ".gii", thick_path + ".shape.gii", thick_path + ".func.gii"]
+    else:
+        candidates = [thick_path]
+    for p in candidates:
+        if not os.path.exists(p):
+            continue
+        try:
+            img = nib.load(p)
+            # pick first darray
+            data = img.darrays[0].data.astype(np.float64)
+            if data.shape[0] == n_vertices:
+                return data
+        except Exception:
+            pass
+        # Try as FreeSurfer morph
+        try:
+            from nibabel.freesurfer import io as fsio
+            data = fsio.read_morph_data(p).astype(np.float64)
+            if data.shape[0] == n_vertices:
+                return data
+        except Exception:
+            pass
+    return None
+
+def project_distance_along_normals(vec, normals):
+    # signed scalar projection of vec onto normals
+    return np.sum(vec * normals, axis=1)
+
+def make_white_from_central_pial_thickness(central_coords, pial_coords, faces, thickness=None):
+    normals = compute_vertex_normals(central_coords, faces)
+
+    # Determine outward normal direction by seeing which way points toward the true pial
+    # We expect pial ≈ central + 0.5*t*normal. Without t, just check average projection of (pial-central) on normal.
+    vec_cp = pial_coords - central_coords
+    proj = project_distance_along_normals(vec_cp, normals)
+    # If average projection is negative, flip normals
+    if np.nanmean(proj) < 0:
+        normals = -normals
+        proj = -proj
+
+    # If thickness is missing, estimate it from pial-central along normals
+    if thickness is None:
+        # t ≈ 2 * projection of (pial-central) along normal (clamp to positive)
+        thickness = 2.0 * proj
+        thickness = np.clip(thickness, a_min=0.0, a_max=None)
+
+    half_t = 0.5 * thickness
+    white_coords = central_coords - (half_t[:, None] * normals)
+    return white_coords
+
+def generate_white_for_hemi(surface_dir, hemi):
+    """
+    hemi: 'lh' or 'rh'
+    Expects:
+      {hemi}.central.gii
+      {hemi}.pial.gii
+      {hemi}.thickness  (GIfTI metric or FreeSurfer morph; optional)
+    Writes:
+      {hemi}.white.gii
+    """
+    central_path = os.path.join(surface_dir, f"{hemi}.central.gii")
+    pial_path    = os.path.join(surface_dir, f"{hemi}.pial.gii")
+    thick_path   = os.path.join(surface_dir, f"{hemi}.thickness")
+    white_path   = os.path.join(surface_dir, f"{hemi}.white.gii")
+
+    central_coords, faces, central_gii = load_surf_gii(central_path)
+    pial_coords, faces2, _ = load_surf_gii(pial_path)
+    assert faces.shape[0] == faces2.shape[0] and np.all(faces == faces2), "Central and pial faces must match"
+
+    thickness = try_load_thickness(thick_path, central_coords.shape[0])
+    white_coords = make_white_from_central_pial_thickness(central_coords, pial_coords, faces, thickness)
+
+    save_surf_gii(white_path, white_coords, faces, central_gii)
+    return white_path
+
+
+#==============================================================================
+# Map volume data to 32k_fs_LR surface
+#==============================================================================
+
+def resample_simnibs_surfaces_to_32kfsLR(m2m_folderpath):
+    
+    import os
+    
+    surfaces_path = os.path.join(m2m_folderpath, 'surfaces')
+    
+    # Generate white matter surfaces from SimNIBS/charm surfaces
+    generate_white_for_hemi(surfaces_path, 'lh')
+    generate_white_for_hemi(surfaces_path, 'rh')
+    
+    # iterate over hemispheres
+    for hemi in [['lh', 'L', 'CORTEX_LEFT'], ['rh', 'R', 'CORTEX_RIGHT']]:
+        
+        surface_template = os.path.join(resources_folderpath, 'templates', 'standard_mesh_atlases', 'resample_fsaverage', 'fs_LR-deformed_to-fsaverage.' + hemi[1] + '.sphere.32k_fs_LR.surf.gii')
+        
+        # resampling
+        # midthickness
+        os.system('wb_shortcuts -freesurfer-resample-prep {} {} {} {} {} {} {}'.format(
+            os.path.join(surfaces_path, hemi[0] + '.white.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.pial.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.sphere.reg.gii'),
+            surface_template,
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.surf.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.32k_fs_LR.surf.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.sphere.reg.surf.gii')
+            ))
+        
+        os.system('wb_command -set-structure {} {} -surface-type ANATOMICAL -surface-secondary-type MIDTHICKNESS'.format(
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.32k_fs_LR.surf.gii'),
+            hemi[2]
+            ))
+        
+        # pial
+        os.system('wb_command -surface-resample {} {} {} BARYCENTRIC {}'.format(
+            os.path.join(surfaces_path, hemi[0] + '.pial.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.sphere.reg.gii'),
+            surface_template,
+            os.path.join(surfaces_path, hemi[0] + '.pial.32k_fs_LR.surf.gii')
+            ))
+        
+        os.system('wb_command -set-structure {} {} -surface-type ANATOMICAL -surface-secondary-type PIAL'.format(
+            os.path.join(surfaces_path, hemi[0] + '.pial.32k_fs_LR.surf.gii'),
+            hemi[2]
+            ))
+
+        # white
+        os.system('wb_command -surface-resample {} {} {} BARYCENTRIC {}'.format(
+            os.path.join(surfaces_path, hemi[0] + '.white.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.sphere.reg.gii'),
+            surface_template,
+            os.path.join(surfaces_path, hemi[0] + '.white.32k_fs_LR.surf.gii')
+            ))
+        
+        os.system('wb_command -set-structure {} {} -surface-type ANATOMICAL -surface-secondary-type GRAY_WHITE'.format(
+            os.path.join(surfaces_path, hemi[0] + '.white.32k_fs_LR.surf.gii'),
+            hemi[2]
+            ))
+        
+        # inflate surface
+        os.system('wb_command -surface-generate-inflated {} {} {}'.format(
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.32k_fs_LR.surf.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.inflated.32k_fs_LR.surf.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.very_inflated.32k_fs_LR.surf.gii')
+            ))
+        
+        
+def volume_to_surface_mapping(volume_data_filepath, m2m_folderpath, smoothing_kernel=None):
+    
+    import os
+    
+    volume_data_path = os.path.split(volume_data_filepath)[0]
+    volume_data_filename = os.path.split(volume_data_filepath)[1]
+    volume_data_name = volume_data_filename.replace('.nii.gz', '')
+    volume_data_name = volume_data_name.replace('.nii', '')
+    
+    surfaces_path = os.path.join(m2m_folderpath, 'surfaces')
+    
+    # iterate over hemispheres
+    for hemi in [['lh', 'L', 'CORTEX_LEFT'], ['rh', 'R', 'CORTEX_RIGHT']]:
+        
+        surface_template = os.path.join(resources_folderpath, 'templates', 'standard_mesh_atlases', 'resample_fsaverage', 'fs_LR-deformed_to-fsaverage.' + hemi[1] + '.sphere.32k_fs_LR.surf.gii')
+    
+        # 1. Map t1w-space BOLD data to native surface
+        os.system('wb_command -volume-to-surface-mapping {} {} {} -ribbon-constrained {} {}'.format(
+            volume_data_filepath,
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.surf.gii'),
+            os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.func.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.white.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.pial.gii')
+            ))
+    
+        # 2. Dilate by 10
+        os.system('wb_command -metric-dilate {} {} 10 {} -nearest'.format(
+            os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.func.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.surf.gii'),
+            os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.func.gii')
+            ))
+        
+        # 3. Resample from native surface to fsLR surface
+        os.system('wb_command -metric-resample {} {} {} ADAP_BARY_AREA {} -area-surfs {} {}'.format(
+            os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.func.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.sphere.reg.surf.gii'),
+            surface_template,
+            os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.32k_fs_LR.func.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.surf.gii'),
+            os.path.join(surfaces_path, hemi[0] + '.midthickness.32k_fs_LR.surf.gii')
+            ))
+        
+        os.system('wb_command -set-structure {} {}'.format(
+            os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.32k_fs_LR.func.gii'),
+            hemi[2]
+            ))
+        
+        # remove intermediate files
+        os.system('rm ' + os.path.join(volume_data_path, volume_data_name + '_' + hemi[0] + '.func.gii'))
+        
+    # 4. Convert from gifti to cifti
+    os.system('wb_command -cifti-create-dense-scalar {} -left-metric {} -right-metric {}'.format(
+        os.path.join(volume_data_path, volume_data_name + '.32k_fs_LR.dscalar.nii'),
+        os.path.join(volume_data_path, volume_data_name + '_' + 'lh' + '.32k_fs_LR.func.gii'),
+        os.path.join(volume_data_path, volume_data_name + '_' + 'rh' + '.32k_fs_LR.func.gii')
+        ))
+
+    # remove intermediate files
+    os.system('rm ' + os.path.join(volume_data_path, volume_data_name + '_' + 'lh' + '.32k_fs_LR.func.gii'))
+    os.system('rm ' + os.path.join(volume_data_path, volume_data_name + '_' + 'rh' + '.32k_fs_LR.func.gii'))
+
+
+    # optional: surface smoothing
+    if smoothing_kernel:
+        
+        os.system('wb_command -cifti-smoothing {} {} {} COLUMN {} -fwhm -left-surface {} -right-surface {}'.format(
+            os.path.join(volume_data_path, volume_data_name + '.32k_fs_LR.dscalar.nii'),
+            str(smoothing_kernel),
+            str(smoothing_kernel),
+            os.path.join(volume_data_path, volume_data_name + '.32k_fs_LR.s' + str(smoothing_kernel) + '.dscalar.nii'),
+            os.path.join(surfaces_path, 'lh.midthickness.32k_fs_LR.surf.gii'),
+            os.path.join(surfaces_path, 'rh.midthickness.32k_fs_LR.surf.gii')
+            ))
+        
+
+def compute_sulcal_depth(m2m_folderpath):
+    
+    import os
+    import numpy as np
+    import nibabel as nib
+    from nibabel.gifti import GiftiImage, GiftiDataArray
+    from nibabel.nifti1 import intent_codes
+    from scipy.ndimage import binary_fill_holes, binary_dilation, binary_erosion, generate_binary_structure
+    from scipy.spatial import ConvexHull, Delaunay
+    from simnibs.mesh_tools import mesh_io
+
+    def meshmesh(label_nifti, out_msh):
+        os.system("meshmesh {} {}".format(label_nifti, out_msh))
+
+
+    cereb_mask_filepath = os.path.join(m2m_folderpath, 'surfaces/cereb_mask.nii.gz')
+    surfaces_path = os.path.join(m2m_folderpath, 'surfaces')
+
+    cereb_mask = nib.load(cereb_mask_filepath)
+    cereb_mask_data = cereb_mask.get_fdata()
+
+    # extract binary masks of hemispheres -------------------------------------
+    # left hemisphere
+    cereb_mask_data_LH = cereb_mask_data.copy()
+    cereb_mask_data_LH[cereb_mask_data != 1] = 0
+    cereb_mask_LH = nib.Nifti2Image(cereb_mask_data_LH, affine = cereb_mask.affine)
+    #cereb_mask_LH.to_filename(cereb_mask_path + '/cereb_mask_LH.nii.gz')
+    
+    # right hemisphere
+    cereb_mask_data_RH = cereb_mask_data.copy()
+    cereb_mask_data_RH[cereb_mask_data != 2] = 0
+    cereb_mask_RH = nib.Nifti2Image(cereb_mask_data_RH, affine = cereb_mask.affine)
+    #cereb_mask_RH.to_filename(cereb_mask_path + '/cereb_mask_RH.nii.gz')
+    
+    # generate convex hull ----------------------------------------------------
+    # left hemisphere =========================================================
+    # img: 3D numpy array
+    img = cereb_mask_data_LH.copy()
+    mask = img.astype(bool)
+
+    # Choose connectivity for background when filling holes:
+    # 6-connectivity (connectivity=1) is standard and fills more aggressively than 26-conn.
+    bg_struct = generate_binary_structure(3, 1)
+
+    # Seal small exterior openings up to ~r voxels wide
+    r = 3  # increase if leaks are wider
+    # Use a box struct (fast) or swap for a spherical one from skimage.morphology.ball(r) if you prefer
+    seal_struct = generate_binary_structure(3, 1)
+
+    dil = binary_dilation(mask, structure=seal_struct, iterations=r)
+    filled = binary_fill_holes(dil, structure=bg_struct)
+    out = filled
+    out = binary_erosion(filled, structure=seal_struct, iterations=r)  # undo dilation
+    out = out.astype(img.dtype)
+    
+    out_nii = nib.Nifti2Image(out, affine = cereb_mask.affine)
+
+    # --- Load image ---
+    img = out_nii
+    data = img.get_fdata() > 0            # binary mask
+    aff = img.affine
+    
+    # --- Foreground voxel coordinates (i,j,k) ---
+    ijk_fg = np.column_stack(np.nonzero(data))          # shape: (N, 3)
+    
+    # --- Map to world (x,y,z) to handle anisotropic spacing correctly ---
+    xyz_fg = nib.affines.apply_affine(aff, ijk_fg)      # shape: (N, 3)
+    
+    # --- Build convex hull over foreground points ---
+    hull = ConvexHull(xyz_fg)                           # hull.vertices, hull.simplices, etc.
+    
+    # Optional: access the hull mesh (vertices/faces) in world coords
+    hull_vertices_xyz = xyz_fg[hull.vertices]           # (M, 3)
+    hull_faces = hull.simplices                         # (F, 3) tetra facets (triangles) in terms of xyz_fg indices
+    
+    # --- Rasterize hull back into a volume mask ---
+    # Strategy: Delaunay membership test for all voxel centers.
+    # (We can test in world coords to respect spacing.)
+    # Use only hull vertices for speed:
+    dela = Delaunay(xyz_fg[hull.vertices])              # tetrahedralization of hull surface
+    
+    # All voxel centers in the volume:
+    ijk_all = np.indices(data.shape).reshape(3, -1).T   # (V, 3)
+    xyz_all = nib.affines.apply_affine(aff, ijk_all)    # (V, 3)
+    
+    inside = dela.find_simplex(xyz_all) >= 0            # boolean, length V
+    hull_mask = inside.reshape(data.shape)
+    
+    # --- Save as NIfTI (same header/affine as input) ---
+    hull_img = nib.Nifti1Image(hull_mask.astype(np.uint8), aff, header=img.header)
+    nib.save(hull_img, surfaces_path + '/convex_hull_LH.nii.gz')
+
+    # --- create mesh from convex hull nifti ---
+    meshmesh(surfaces_path + '/convex_hull_LH.nii.gz', surfaces_path + '/convex_hull_LH.msh')
+
+    # --- load pial surface ---
+    gii = nib.load(surfaces_path + '/lh.pial.32k_fs_LR.surf.gii')
+    verts = gii.darrays[0].data          # shape (N, 3), float32
+    faces = gii.darrays[1].data.astype(int)  # shape (M, 3), int32
+
+    # --- Load the convex hull mesh ---
+    m = mesh_io.read_msh(surfaces_path + '/convex_hull_LH.msh')   # m is a simnibs.mesh_tools.mesh_io.Msh object
+    
+    # Get triangle element IDs
+    tri_ids = m.elm.triangles
+    
+    # Map to node numbers (1-based IDs of the three vertices per triangle)
+    tri_node_ids = m.elm.node_number_list[tri_ids - 1, :3]
+    
+    # Collect unique node IDs from those triangles
+    unique_node_ids = np.unique(tri_node_ids)
+    
+    # --- Vertex coordinates (mm, world space) ---
+    V = m.nodes.node_coord[unique_node_ids - 1, :]   # (N_vert, 3)
+
+    # --- compute sulcal depth ---
+    # find closest vertices and corresponding distance
+    ED_closest_vertices_L = []
+    for i in np.arange(len(verts)):
+        try:
+            ED_convex_hull = np.linalg.norm((V - verts[i]), axis=1)
+            ED_closest_vertices_L.append((min(ED_convex_hull)))
+        except:
+            ED_closest_vertices_L.append((np.nan))
+    ED_closest_vertices_L = np.asarray(ED_closest_vertices_L).astype(float)
+    
+    data = ED_closest_vertices_L.astype(np.float32)
+    data = data - np.median(data)
+    data = data * (-1)
+    
+    gda = GiftiDataArray(
+        data=data,
+        intent=intent_codes['NIFTI_INTENT_SHAPE'],  # good for scalar per-vertex maps
+    )
+    
+    gii = GiftiImage(darrays=[gda])
+    
+    # Optional metadata (helps some viewers like Workbench)
+    gii.meta.data.append(nib.gifti.GiftiNVPairs('AnatomicalStructurePrimary', 'CortexLeft'))
+    gda.meta.data.append(nib.gifti.GiftiNVPairs('Name', 'sulcal_depth'))
+    
+    # Save as .func.gii (or .shape.gii if you prefer)
+    nib.save(gii, surfaces_path + '/lh_sulcal_depth.func.gii')
+
+    # right hemisphere =========================================================
+    # img: 3D numpy array
+    img = cereb_mask_data_RH.copy()
+    mask = img.astype(bool)
+    
+    # Choose connectivity for background when filling holes:
+    # 6-connectivity (connectivity=1) is standard and fills more aggressively than 26-conn.
+    bg_struct = generate_binary_structure(3, 1)
+    
+    # Seal small exterior openings up to ~r voxels wide
+    r = 3  # increase if leaks are wider
+    # Use a box struct (fast) or swap for a spherical one from skimage.morphology.ball(r) if you prefer
+    seal_struct = generate_binary_structure(3, 1)
+    
+    dil = binary_dilation(mask, structure=seal_struct, iterations=r)
+    filled = binary_fill_holes(dil, structure=bg_struct)
+    out = filled
+    out = binary_erosion(filled, structure=seal_struct, iterations=r)  # undo dilation
+    out = out.astype(img.dtype)
+    
+    out_nii = nib.Nifti2Image(out, affine = cereb_mask.affine)
+    
+    # --- Load image ---
+    img = out_nii
+    data = img.get_fdata() > 0            # binary mask
+    aff = img.affine
+    
+    # --- Foreground voxel coordinates (i,j,k) ---
+    ijk_fg = np.column_stack(np.nonzero(data))          # shape: (N, 3)
+    
+    # --- Map to world (x,y,z) to handle anisotropic spacing correctly ---
+    xyz_fg = nib.affines.apply_affine(aff, ijk_fg)      # shape: (N, 3)
+    
+    # --- Build convex hull over foreground points ---
+    hull = ConvexHull(xyz_fg)                           # hull.vertices, hull.simplices, etc.
+    
+    # Optional: access the hull mesh (vertices/faces) in world coords
+    hull_vertices_xyz = xyz_fg[hull.vertices]           # (M, 3)
+    hull_faces = hull.simplices                         # (F, 3) tetra facets (triangles) in terms of xyz_fg indices
+    
+    # --- Rasterize hull back into a volume mask ---
+    # Strategy: Delaunay membership test for all voxel centers.
+    # (We can test in world coords to respect spacing.)
+    # Use only hull vertices for speed:
+    dela = Delaunay(xyz_fg[hull.vertices])              # tetrahedralization of hull surface
+    
+    # All voxel centers in the volume:
+    ijk_all = np.indices(data.shape).reshape(3, -1).T   # (V, 3)
+    xyz_all = nib.affines.apply_affine(aff, ijk_all)    # (V, 3)
+    
+    inside = dela.find_simplex(xyz_all) >= 0            # boolean, length V
+    hull_mask = inside.reshape(data.shape)
+    
+    # --- Save as NIfTI (same header/affine as input) ---
+    hull_img = nib.Nifti1Image(hull_mask.astype(np.uint8), aff, header=img.header)
+    nib.save(hull_img, surfaces_path + '/convex_hull_RH.nii.gz')
+    
+    # --- create mesh from convex hull nifti ---
+    meshmesh(surfaces_path + '/convex_hull_RH.nii.gz', surfaces_path + '/convex_hull_RH.msh')
+    
+    # --- load pial surface ---
+    gii = nib.load(surfaces_path + '/rh.pial.32k_fs_LR.surf.gii')
+    verts = gii.darrays[0].data          # shape (N, 3), float32
+    faces = gii.darrays[1].data.astype(int)  # shape (M, 3), int32
+    
+    # --- Load the convex hull mesh ---
+    m = mesh_io.read_msh(surfaces_path + '/convex_hull_RH.msh')   # m is a simnibs.mesh_tools.mesh_io.Msh object
+    
+    # Get triangle element IDs
+    tri_ids = m.elm.triangles
+    
+    # Map to node numbers (1-based IDs of the three vertices per triangle)
+    tri_node_ids = m.elm.node_number_list[tri_ids - 1, :3]
+    
+    # Collect unique node IDs from those triangles
+    unique_node_ids = np.unique(tri_node_ids)
+    
+    # --- Vertex coordinates (mm, world space) ---
+    V = m.nodes.node_coord[unique_node_ids - 1, :]   # (N_vert, 3)
+    
+    # --- compute sulcal depth ---
+    # find closest vertices and corresponding distance
+    ED_closest_vertices_L = []
+    for i in np.arange(len(verts)):
+        try:
+            ED_convex_hull = np.linalg.norm((V - verts[i]), axis=1)
+            ED_closest_vertices_L.append((min(ED_convex_hull)))
+        except:
+            ED_closest_vertices_L.append((np.nan))
+    ED_closest_vertices_L = np.asarray(ED_closest_vertices_L).astype(float)
+    
+    data = ED_closest_vertices_L.astype(np.float32)
+    data = data - np.median(data)
+    data = data * (-1)
+    
+    gda = GiftiDataArray(
+        data=data,
+        intent=intent_codes['NIFTI_INTENT_SHAPE'],  # good for scalar per-vertex maps
+    )
+    
+    gii = GiftiImage(darrays=[gda])
+    
+    # Optional metadata (helps some viewers like Workbench)
+    gii.meta.data.append(nib.gifti.GiftiNVPairs('AnatomicalStructurePrimary', 'CortexRight'))
+    gda.meta.data.append(nib.gifti.GiftiNVPairs('Name', 'sulcal_depth'))
+    
+    # Save as .func.gii (or .shape.gii if you prefer)
+    nib.save(gii, surfaces_path + '/rh_sulcal_depth.func.gii')
+
+    
+    import numpy as np
+    import nibabel as nib
+    from nibabel.cifti2 import Cifti2Image, Cifti2Header
+    from nibabel.cifti2.cifti2_axes import BrainModelAxis, ScalarAxis
+    
+    # --- 1) Load your .func.gii files (one value per vertex) ---
+    gL = nib.load(surfaces_path + '/lh_sulcal_depth.func.gii')   # left hemisphere metric
+    gR = nib.load(surfaces_path + '/rh_sulcal_depth.func.gii')   # right hemisphere metric
+    
+    # If each file has exactly one data array:
+    LH = gL.darrays[0].data.astype(np.float32)  # shape (nL,)
+    RH = gR.darrays[0].data.astype(np.float32)  # shape (nR,)
+    
+    # If there are multiple arrays/columns per file, stack or pick the column you need.
+    
+    # --- 2) Make BrainModelAxis for surfaces (all vertices included) ---
+    bmL = BrainModelAxis.from_mask(np.ones(LH.shape[0], dtype=bool), name="cortex_left")
+    bmR = BrainModelAxis.from_mask(np.ones(RH.shape[0], dtype=bool), name="cortex_right")
+    bm  = bmL + bmR   # left then right ordering
+    
+    # --- 3) Make a ScalarAxis (one map). Name it however you like ---
+    sc = ScalarAxis(["sulcal_depth"])
+    
+    # --- 4) Assemble CIFTI data matrix: (n_scalars, n_grayordinates) ---
+    data = np.concatenate([LH, RH])[None, :]     # shape (1, bm.size)
+    
+    # --- 5) Build header from axes and save as dscalar.nii ---
+    hdr = Cifti2Header.from_axes((sc, bm))
+    img = Cifti2Image(dataobj=data, header=hdr)
+    nib.save(img, surfaces_path + '/sulcal_depth.dscalar.nii')
