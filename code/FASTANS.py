@@ -1521,73 +1521,107 @@ def fast_pfm(timeseries_filepath, parcellation, output_folderpath, surface_midth
 #     average_seed_timeseries = 
     
     
-def extract_best_coil_placements_FC_hotspot(simulation_results, search_grid, hotspot_percentiles, FCmap_filepath, FC_target_valence, n_placements, surface_midthickness_left_filepath, surface_midthickness_right_filepath):
+# def extract_best_coil_placements_FC_hotspot(simulation_results, search_grid, hotspot_percentiles, FCmap_filepath, FC_target_valence, n_placements, surface_midthickness_left_filepath, surface_midthickness_right_filepath):
     
-    """
-    Rank placements by how much of the high-E-field *hotspot* falls within
-    target vs. avoidance networks defined by a parcellation.
+#     """
+#     Rank placements by how much of the high-E-field *hotspot* falls within
+#     target vs. avoidance networks defined by a parcellation.
 
-    For each placement and each percentile p in *hotspot_percentiles*:
-    - threshold the cortex E-field at p%
-    - compute the fraction of hotspot area inside *target* labels and inside
-      *avoidance* labels (or the complement if ``avoidance_id_list`` empty)
-    - average fractions across percentiles
-    - score = ``2/3 * mean(target_frac) - 1/3 * mean(avoidance_frac)``
+#     For each placement and each percentile p in *hotspot_percentiles*:
+#     - threshold the cortex E-field at p%
+#     - compute the fraction of hotspot area inside *target* labels and inside
+#       *avoidance* labels (or the complement if ``avoidance_id_list`` empty)
+#     - average fractions across percentiles
+#     - score = ``2/3 * mean(target_frac) - 1/3 * mean(avoidance_frac)``
 
-    Parameters
-    ----------
-    simulation_results : numpy.ndarray, shape (N_positions, 64984)
-        Per-vertex E-field magnitudes.
-    search_grid : list
-        Coil placements.
-    hotspot_percentiles : array_like
-        Percentiles (e.g., 99.0..99.8) used to define hotspots.
-    FCmap_filepath : str
-        Parcellation CIFTI where integers encode network IDs.
-    FC_target_values : {'positive', 'negative'}
-        'positive' : maximize E-field hotspot in positive FC areas
-        'negative' : maximize E-field hotspot in negative FC areas
-    n_placements : int
-        How many top placements to return.
-    surface_midthickness_left_filepath, surface_midthickness_right_filepath : str
-        For area computations (vertex area per hemisphere).
+#     Parameters
+#     ----------
+#     simulation_results : numpy.ndarray, shape (N_positions, 64984)
+#         Per-vertex E-field magnitudes.
+#     search_grid : list
+#         Coil placements.
+#     hotspot_percentiles : array_like
+#         Percentiles (e.g., 99.0..99.8) used to define hotspots.
+#     FCmap_filepath : str
+#         Parcellation CIFTI where integers encode network IDs.
+#     FC_target_values : {'positive', 'negative'}
+#         'positive' : maximize E-field hotspot in positive FC areas
+#         'negative' : maximize E-field hotspot in negative FC areas
+#     n_placements : int
+#         How many top placements to return.
+#     surface_midthickness_left_filepath, surface_midthickness_right_filepath : str
+#         For area computations (vertex area per hemisphere).
 
-    Returns
-    -------
-    list
-        Top placements maximizing hotspot mass in targets while minimizing in avoidance.
-    """
+#     Returns
+#     -------
+#     list
+#         Top placements maximizing hotspot mass in targets while minimizing in avoidance.
+#     """
+#     import numpy as np
+
+#     FCmap_values = load_cifti_values(FCmap_filepath)
+
+#     simulation_hotspots = np.zeros([simulation_results.shape[0], simulation_results.shape[1], len(hotspot_percentiles)])
+#     FCmap_hotspots = np.zeros([simulation_results.shape[0], simulation_results.shape[1], len(hotspot_percentiles)])
+    
+#     FCmap_hotspots_average = np.zeros([simulation_results.shape[0], simulation_results.shape[1]])
+
+#     for i in np.arange(simulation_results.shape[0]):
+#         for j in np.arange(len(hotspot_percentiles)):
+#             hotspot_tmp = simulation_results[i, :].copy()
+#             percentile_value = np.percentile(hotspot_tmp, hotspot_percentiles[j])
+#             hotspot_tmp[hotspot_tmp < percentile_value] = 0
+#             hotspot_tmp[hotspot_tmp >= percentile_value] = 1
+
+#             simulation_hotspots[i, :, j] = hotspot_tmp
+#             FCmap_hotspots[i, :, j] = np.multiply(FCmap_values, hotspot_tmp)
+            
+#     FCmap_hotspots_average = np.asarray([np.nanmean(FCmap_hotspots[i,:,:], axis=1) for i in np.arange(simulation_results.shape[0])])
+
+#     FCmap_hotspots_average_sum = np.nansum(FCmap_hotspots_average, axis=1)
+    
+#     if FC_target_valence == 'positive':
+#         best_coil_placements_indices = (-np.array(FCmap_hotspots_average_sum)).argsort()[:n_placements]
+#     elif FC_target_valence == 'negative':
+#         best_coil_placements_indices = (np.array(FCmap_hotspots_average_sum)).argsort()[:n_placements]
+        
+#     best_coil_placements = [search_grid[i] for i in best_coil_placements_indices]
+
+#     return best_coil_placements
+
+
+def extract_best_coil_placements_FC_hotspot(
+    simulation_results, search_grid, hotspot_percentiles, FCmap_filepath,
+    FC_target_valence, n_placements,
+    surface_midthickness_left_filepath, surface_midthickness_right_filepath
+):
     import numpy as np
 
-    FCmap_values = load_cifti_values(FCmap_filepath)
+    FCmap_values = load_cifti_values(FCmap_filepath)  # shape (64984,)
+    n_placements_total = simulation_results.shape[0]
+    n_percentiles = len(hotspot_percentiles)
 
-    simulation_hotspots = np.zeros([simulation_results.shape[0], simulation_results.shape[1], len(hotspot_percentiles)])
-    FCmap_hotspots = np.zeros([simulation_results.shape[0], simulation_results.shape[1], len(hotspot_percentiles)])
-    
-    FCmap_hotspots_average = np.zeros([simulation_results.shape[0], simulation_results.shape[1]])
+    FCmap_hotspots_average_sum = np.zeros(n_placements_total, dtype=np.float64)
 
-    for i in np.arange(simulation_results.shape[0]):
-        for j in np.arange(len(hotspot_percentiles)):
-            hotspot_tmp = simulation_results[i, :].copy()
-            percentile_value = np.percentile(hotspot_tmp, hotspot_percentiles[j])
-            hotspot_tmp[hotspot_tmp < percentile_value] = 0
-            hotspot_tmp[hotspot_tmp >= percentile_value] = 1
+    for i in range(n_placements_total):
+        efield = simulation_results[i, :]           # shape (64984,)
+        running_mean = np.zeros(efield.shape, dtype=np.float64)
 
-            simulation_hotspots[i, :, j] = hotspot_tmp
-            FCmap_hotspots[i, :, j] = np.multiply(FCmap_values, hotspot_tmp)
-            
-    FCmap_hotspots_average = np.asarray([np.nanmean(FCmap_hotspots[i,:,:], axis=1) for i in np.arange(simulation_results.shape[0])])
+        for j, pct in enumerate(hotspot_percentiles):
+            threshold = np.percentile(efield, pct)
+            hotspot_mask = (efield >= threshold).astype(np.float64)  # 0/1
+            fc_masked = FCmap_values * hotspot_mask                  # shape (64984,)
+            # Welford-style incremental mean to avoid stacking
+            running_mean += (fc_masked - running_mean) / (j + 1)
 
-    FCmap_hotspots_average_sum = np.nansum(FCmap_hotspots_average, axis=1)
-    
+        FCmap_hotspots_average_sum[i] = np.nansum(running_mean)
+
     if FC_target_valence == 'positive':
-        best_coil_placements_indices = (-np.array(FCmap_hotspots_average_sum)).argsort()[:n_placements]
+        best_indices = (-FCmap_hotspots_average_sum).argsort()[:n_placements]
     elif FC_target_valence == 'negative':
-        best_coil_placements_indices = (np.array(FCmap_hotspots_average_sum)).argsort()[:n_placements]
-        
-    best_coil_placements = [search_grid[i] for i in best_coil_placements_indices]
+        best_indices = FCmap_hotspots_average_sum.argsort()[:n_placements]
 
-    return best_coil_placements
+    return [search_grid[i] for i in best_indices], best_indices
 
 
 #==============================================================================
